@@ -1,0 +1,16 @@
+// firestore.rules
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Anyone can submit a contact form
+    match /contacts/{docId} {
+      allow create: if request.resource.data.name is string
+                    && request.resource.data.name.size() > 0
+                    && request.resource.data.email is string
+                    && request.resource.data.email.size() > 0;
+      // Only admins can read contacts (set up Firebase Auth + custom claims for admin)
+      allow read, update, delete: if false;
+    }
+  }
+}
