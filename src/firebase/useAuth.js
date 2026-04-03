@@ -1,39 +1,38 @@
 import { useState, useEffect } from "react";
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged,
-  updateProfile,
-  sendPasswordResetEmail,
-} from "firebase/auth";
-import { auth } from "./config";
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
+import { auth, db } from "./config";   // ← твой config.js
 
 export function useAuth() {
   const [user, setUser] = useState(null);
+  const [role, setRole] = useState(null);   // ← новая роль
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => {
-      setUser(u);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        setUser(firebaseUser);
+
+        // Загружаем роль из Firestore
+        const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
+        if (userDoc.exists()) {
+          setRole(userDoc.data().role || "user");
+        } else {
+          setRole("user");
+        }
+      } else {
+        setUser(null);
+        setRole(null);
+      }
       setLoading(false);
     });
-    return unsub;
+
+    return () => unsubscribe();
   }, []);
 
-  const register = async (email, password, name) => {
-    const cred = await createUserWithEmailAndPassword(auth, email, password);
-    await updateProfile(cred.user, { displayName: name });
-    return cred.user;
+  const logout = async () => {
+    await signOut(auth);
   };
 
-  const login = (email, password) =>
-    signInWithEmailAndPassword(auth, email, password);
-
-  const logout = () => signOut(auth);
-
-  const resetPassword = (email) =>
-    sendPasswordResetEmail(auth, email);
-
-  return { user, loading, register, login, logout, resetPassword };
+  return { user, role, loading, logout };
 }
