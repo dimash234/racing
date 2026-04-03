@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
-import { Menu, X, Gauge, User, LogOut } from "lucide-react";
+import { Menu, X, Gauge, User, LogOut, ShieldCheck } from "lucide-react";
 import { useLanguage } from "../i18n/LanguageContext";
 import { useAuth } from "../firebase/useAuth";
 import { useNavigate } from "react-router-dom";
 
 export default function Navbar({ onAuthClick }) {
   const { lang, setLang, t } = useLanguage();
-  const { user, logout } = useAuth();
+  const { user, role, logout } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -22,6 +22,8 @@ export default function Navbar({ onAuthClick }) {
     navigate("/");
     setOpen(false);
   };
+
+  const isManager = role === "manager" || role === "admin";
 
   const links = [
     { key: "home", href: "#hero" },
@@ -168,6 +170,29 @@ export default function Navbar({ onAuthClick }) {
 
           {user ? (
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {/* Кнопка Admin Panel — только для manager/admin */}
+              {isManager && (
+                <a
+                  href="/admin"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 7,
+                    padding: "7px 14px",
+                    background: "#1A1A2E",
+                    borderRadius: 8,
+                    textDecoration: "none",
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: "#E8C547",
+                  }}
+                >
+                  <ShieldCheck size={14} />
+                  Admin
+                </a>
+              )}
+
               {/* Кнопка в кабинет */}
               <a
                 href="/dashboard"
@@ -298,6 +323,31 @@ export default function Navbar({ onAuthClick }) {
 
           {user && (
             <div style={{ marginTop: 20 }}>
+              {/* Admin в мобильном меню */}
+              {isManager && (
+                <a
+                  href="/admin"
+                  onClick={() => setOpen(false)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "12px 14px",
+                    marginBottom: 8,
+                    background: "#1A1A2E",
+                    borderRadius: 10,
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: "#E8C547",
+                    textDecoration: "none",
+                  }}
+                >
+                  <ShieldCheck size={18} />
+                  Admin Panel
+                </a>
+              )}
+
               <a
                 href="/dashboard"
                 onClick={() => setOpen(false)}

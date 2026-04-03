@@ -10,6 +10,7 @@ import Contact from "./components/Contact";
 import Footer from "./components/Footer";
 import AdminPanel from "./components/AdminPanel";
 import UserDashboard from "./components/UserDashboard";
+import ProtectedRoute from "./components/ProtectedRoute";
 import { useState } from "react";
 import AuthModal from "./components/AuthModal";
 
@@ -38,8 +39,26 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<MainSite />} />
-        <Route path="/dashboard" element={<UserDashboard />} />
-        <Route path="/admin" element={<AdminPanel />} />
+
+        {/* Личный кабинет — только авторизованным */}
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute requiredRole="user">
+              <UserDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Админ-панель — только manager и admin */}
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute requiredRole="manager">
+              <AdminPanel />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </BrowserRouter>
   );
