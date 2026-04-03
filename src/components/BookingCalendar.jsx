@@ -180,30 +180,11 @@ export default function BookingCalendar({ onAuthRequired }) {
                 }}>
                 <span>🎮</span>
                 Оба симулятора
-                <span style={{ fontSize: 11, padding: "2px 7px", background: "#8B5CF6", color: "#fff", borderRadius: 100, marginLeft: 2 }}>4 500₸</span>
+                <span style={{ fontSize: 11, padding: "2px 7px", background: "#8B5CF6", color: "#fff", borderRadius: 100, marginLeft: 2 }}>2500₸</span>
                 {selectedMode === "both" && (
                   <span style={{ position: "absolute", top: -8, right: -8, fontSize: 9, padding: "2px 7px", background: "#22C55E", color: "#fff", borderRadius: 100, fontWeight: 700 }}>Выгодно</span>
                 )}
               </button>
-
-              {SIMULATORS.map(sim => (
-                <button
-                  key={sim.id}
-                  onClick={() => { setSelectedMode(sim.id); setSelectedTime(null); }}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 8,
-                    padding: "10px 18px", borderRadius: 12,
-                    border: `2px solid ${selectedMode === sim.id ? sim.color : "#E5E7EB"}`,
-                    background: selectedMode === sim.id ? sim.color + "12" : "#fff",
-                    cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 700,
-                    color: selectedMode === sim.id ? sim.color : "#6B7280",
-                    transition: "all 0.2s",
-                  }}>
-                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: sim.color }} />
-                  {sim.emoji} {sim.name}
-                  <span style={{ fontSize: 11, color: selectedMode === sim.id ? sim.color : "#9CA3AF" }}>{sim.price}</span>
-                </button>
-              ))}
             </div>
           </div>
 
