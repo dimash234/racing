@@ -1,76 +1,50 @@
 import { useState } from "react";
 import {
   collection,
-  addDoc,
-  getDocs,
   query,
   where,
-  orderBy,
-  serverTimestamp,
+  getDocs,
+  addDoc,
   deleteDoc,
   doc,
+  serverTimestamp,
 } from "firebase/firestore";
 import { db } from "./config";
 
 export function useBookings() {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
 
-  // Get all bookings for a specific date
+  // Все бронирования на конкретную дату (для календаря)
   const getBookingsForDate = async (date) => {
-    const q = query(
-      collection(db, "bookings"),
-      where("date", "==", date)
-    );
+    const q = query(collection(db, "bookings"), where("date", "==", date));
     const snap = await getDocs(q);
     return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
   };
 
-  // Get bookings for a specific user
-  const getUserBookings = async (uid) => {
-    const q = query(
-      collection(db, "bookings"),
-      where("userId", "==", uid),
-      orderBy("createdAt", "desc")
-    );
+  // Все бронирования конкретного пользователя (для дашборда)
+  const getUserBookings = async (userId) => {
+    const q = query(collection(db, "bookings"), where("userId", "==", userId));
     const snap = await getDocs(q);
     return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
   };
 
-  // Get ALL bookings (admin)
-  const getAllBookings = async () => {
-    const q = query(collection(db, "bookings"), orderBy("date", "asc"));
-    const snap = await getDocs(q);
-    return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-  };
-
-  // Book a slot
-  const bookSlot = async ({ userId, userName, userEmail, date, time, simulator }) => {
+  // Создать бронирование
+  const bookSlot = async (data) => {
     setLoading(true);
-    setError(null);
     try {
       await addDoc(collection(db, "bookings"), {
-        userId,
-        userName,
-        userEmail,
-        date,
-        time,
-        simulator,
-        status: "confirmed",
+        ...data,
         createdAt: serverTimestamp(),
       });
-    } catch (e) {
-      setError(e.message);
-      throw e;
     } finally {
       setLoading(false);
     }
   };
 
-  // Cancel booking
+  // Отменить бронирование
   const cancelBooking = async (bookingId) => {
     await deleteDoc(doc(db, "bookings", bookingId));
   };
 
-  return { loading, error, getBookingsForDate, getUserBookings, getAllBookings, bookSlot, cancelBooking };
+  return { getBookingsForDate, getUserBookings, bookSlot, cancelBooking, loading };
 }

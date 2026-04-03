@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Clock, Monitor, CheckCircle2, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock, CheckCircle2, X } from "lucide-react";
 import { useBookings } from "../firebase/useBookings";
 import { useAuth } from "../firebase/useAuth";
 
@@ -10,12 +10,18 @@ const TIME_SLOTS = [
   "18:00","18:30","19:00","19:30",
 ];
 
-const SIM_COLORS = { "City Car Driving": "#3B82F6", "BeamNG.Drive": "#E8C547" };
+// Симуляторы с ценами
+const SIMULATORS = [
+  { id: "city",  name: "City Car Driving", color: "#3B82F6", emoji: "🚗", price: "2 500₸" },
+  { id: "beam",  name: "BeamNG.Drive",     color: "#D97706", emoji: "⚡", price: "2 500₸" },
+];
+
+// Пакет — оба симулятора
+const PACKAGE = { name: "Оба симулятора", color: "#8B5CF6", emoji: "🎮", price: "4 500₸" };
 
 function formatDate(date) {
   return date.toISOString().split("T")[0];
 }
-
 function addDays(date, n) {
   const d = new Date(date);
   d.setDate(d.getDate() + n);
@@ -29,13 +35,14 @@ export default function BookingCalendar({ onAuthRequired }) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [selectedTime, setSelectedTime] = useState(null);
-  const [selectedSim, setSelectedSim] = useState("City Car Driving");
-  const [bookedSlots, setBookedSlots] = useState([]);
-  const [success, setSuccess] = useState(false);
-  const [weekOffset, setWeekOffset] = useState(0);
-  const [cancelling, setCancelling] = useState(null);
+  const [selectedDate, setSelectedDate]   = useState(new Date());
+  const [selectedTime, setSelectedTime]   = useState(null);
+  // "city" | "beam" | "both"
+  const [selectedMode, setSelectedMode]   = useState("both");
+  const [bookedSlots, setBookedSlots]     = useState([]);
+  const [success, setSuccess]             = useState(false);
+  const [weekOffset, setWeekOffset]       = useState(0);
+  const [cancelling, setCancelling]       = useState(null);
 
   const getWeekDays = () => {
     const start = addDays(today, weekOffset * 7);
@@ -43,7 +50,6 @@ export default function BookingCalendar({ onAuthRequired }) {
     monday.setDate(start.getDate() - ((start.getDay() + 6) % 7));
     return Array.from({ length: 7 }, (_, i) => addDays(monday, i));
   };
-
   const weekDays = getWeekDays();
 
   useEffect(() => { loadSlots(); }, [selectedDate]);
@@ -53,8 +59,15 @@ export default function BookingCalendar({ onAuthRequired }) {
     setBookedSlots(data);
   };
 
-  const getSlotBooking = (time, sim) =>
-    bookedSlots.find((b) => b.time === time && b.simulator === sim);
+  // Все бронирования на этот слот и дату
+  const getSlotBookings = (time) =>
+    bookedSlots.filter((b) => b.time === time);
+
+  const isBookedFor = (time, sim) =>
+    bookedSlots.some((b) => b.time === time && (b.simulator === sim || b.simulator === "Оба симулятора"));
+
+  const myBookingFor = (time, sim) =>
+    bookedSlots.find((b) => b.time === time && user && b.userId === user.uid && (b.simulator === sim || b.simulator === "Оба симулятора"));
 
   const isPast = (time) => {
     const [h, m] = time.split(":").map(Number);
@@ -63,15 +76,47 @@ export default function BookingCalendar({ onAuthRequired }) {
     return d < new Date();
   };
 
+  // Для выбранного режима — свободен ли слот?
+  const isSlotFreeForMode = (time) => {
+    if (selectedMode === "both") {
+      return !isBookedFor(time, "City Car Driving") && !isBookedFor(time, "BeamNG.Drive");
+    }
+    const simName = selectedMode === "city" ? "City Car Driving" : "BeamNG.Drive";
+    return !isBookedFor(time, simName);
+  };
+
+  const isMySlot = (time) => {
+    if (selectedMode === "both") {
+      return myBookingFor(time, "City Car Driving") || myBookingFor(time, "BeamNG.Drive");
+    }
+    const simName = selectedMode === "city" ? "City Car Driving" : "BeamNG.Drive";
+    return myBookingFor(time, simName);
+  };
+
   const handleBook = async () => {
     if (!user) { onAuthRequired(); return; }
     if (!selectedTime) return;
     try {
-      await bookSlot({ userId: user.uid, userName: user.displayName || user.email, userEmail: user.email, date: formatDate(selectedDate), time: selectedTime, simulator: selectedSim });
+      const base = {
+        userId: user.uid,
+        userName: user.displayName || user.email,
+        userEmail: user.email,
+        date: formatDate(selectedDate),
+        time: selectedTime,
+      };
+
+      if (selectedMode === "both") {
+        // Одна запись — «Оба симулятора»
+        await bookSlot({ ...base, simulator: "Оба симулятора" });
+      } else {
+        const simName = selectedMode === "city" ? "City Car Driving" : "BeamNG.Drive";
+        await bookSlot({ ...base, simulator: simName });
+      }
+
       setSuccess(true);
       setSelectedTime(null);
       await loadSlots();
-      setTimeout(() => setSuccess(false), 4000);
+      setTimeout(() => setSuccess(false), 5000);
     } catch {}
   };
 
@@ -87,15 +132,20 @@ export default function BookingCalendar({ onAuthRequired }) {
     }
   };
 
-  const dayNames = ["Пн","Вт","Ср","Чт","Пт","Сб","Вс"];
+  const dayNames   = ["Пн","Вт","Ср","Чт","Пт","Сб","Вс"];
   const monthNames = ["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
 
-  const selectedBooking = selectedTime ? getSlotBooking(selectedTime, selectedSim) : null;
-  const isMySelectedBooking = selectedBooking && user && selectedBooking.userId === user.uid;
+  // Текущий выбранный симулятор
+  const currentMode = selectedMode === "both" ? PACKAGE
+    : selectedMode === "city" ? { ...SIMULATORS[0], emoji: SIMULATORS[0].emoji }
+    : { ...SIMULATORS[1], emoji: SIMULATORS[1].emoji };
+
+  const selectedMyBooking = selectedTime ? isMySlot(selectedTime) : null;
 
   return (
     <section id="booking" style={{ padding: "100px 24px", background: "#F9FAFB" }}>
       <div style={{ maxWidth: 960, margin: "0 auto" }}>
+
         {/* Header */}
         <div style={{ textAlign: "center", marginBottom: 48 }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 100, padding: "5px 14px", marginBottom: 16 }}>
@@ -105,49 +155,83 @@ export default function BookingCalendar({ onAuthRequired }) {
             Выберите время
           </h2>
           <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 16, color: "#6B7280", maxWidth: 440, margin: "0 auto" }}>
-            Выберите симулятор, дату и свободный слот. Занятие 30 минут — 2 500₸.
+            Запишитесь на один или оба симулятора сразу.
           </p>
         </div>
 
         <div style={{ background: "#fff", borderRadius: 24, border: "1px solid #E5E7EB", overflow: "hidden", boxShadow: "0 4px 24px rgba(0,0,0,0.06)" }}>
 
-          {/* Simulator tabs */}
-          <div style={{ padding: "20px 28px", borderBottom: "1px solid #F3F4F6", display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#9CA3AF", fontWeight: 500, marginRight: 4 }}>Симулятор:</span>
-            {Object.entries(SIM_COLORS).map(([sim, color]) => (
-              <button key={sim} onClick={() => { setSelectedSim(sim); setSelectedTime(null); }}
-                style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 18px", borderRadius: 10, border: `2px solid ${selectedSim === sim ? color : "#E5E7EB"}`, background: selectedSim === sim ? `${color}12` : "#fff", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 700, color: selectedSim === sim ? color : "#6B7280", transition: "all 0.2s" }}>
-                <div style={{ width: 8, height: 8, borderRadius: "50%", background: color }} />
-                {sim}
+          {/* ── Выбор режима ── */}
+          <div style={{ padding: "20px 28px", borderBottom: "1px solid #F3F4F6" }}>
+            <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#9CA3AF", fontWeight: 500, marginBottom: 10 }}>Выберите симулятор:</div>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+
+              {/* Оба — выделено как рекомендованный */}
+              <button
+                onClick={() => { setSelectedMode("both"); setSelectedTime(null); }}
+                style={{
+                  display: "flex", alignItems: "center", gap: 8,
+                  padding: "10px 18px", borderRadius: 12,
+                  border: `2px solid ${selectedMode === "both" ? "#8B5CF6" : "#E5E7EB"}`,
+                  background: selectedMode === "both" ? "#F5F3FF" : "#fff",
+                  cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 700,
+                  color: selectedMode === "both" ? "#7C3AED" : "#6B7280",
+                  transition: "all 0.2s", position: "relative",
+                }}>
+                <span>🎮</span>
+                Оба симулятора
+                <span style={{ fontSize: 11, padding: "2px 7px", background: "#8B5CF6", color: "#fff", borderRadius: 100, marginLeft: 2 }}>4 500₸</span>
+                {selectedMode === "both" && (
+                  <span style={{ position: "absolute", top: -8, right: -8, fontSize: 9, padding: "2px 7px", background: "#22C55E", color: "#fff", borderRadius: 100, fontWeight: 700 }}>Выгодно</span>
+                )}
               </button>
-            ))}
+
+              {SIMULATORS.map(sim => (
+                <button
+                  key={sim.id}
+                  onClick={() => { setSelectedMode(sim.id); setSelectedTime(null); }}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 8,
+                    padding: "10px 18px", borderRadius: 12,
+                    border: `2px solid ${selectedMode === sim.id ? sim.color : "#E5E7EB"}`,
+                    background: selectedMode === sim.id ? sim.color + "12" : "#fff",
+                    cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 700,
+                    color: selectedMode === sim.id ? sim.color : "#6B7280",
+                    transition: "all 0.2s",
+                  }}>
+                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: sim.color }} />
+                  {sim.emoji} {sim.name}
+                  <span style={{ fontSize: 11, color: selectedMode === sim.id ? sim.color : "#9CA3AF" }}>{sim.price}</span>
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Week nav */}
+          {/* ── Неделя: навигация ── */}
           <div style={{ padding: "14px 28px", borderBottom: "1px solid #F3F4F6", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <button onClick={() => setWeekOffset((w) => w - 1)} disabled={weekOffset <= 0}
-              style={{ width: 34, height: 34, border: "1.5px solid #E5E7EB", borderRadius: 10, background: weekOffset <= 0 ? "#F9FAFB" : "#fff", cursor: weekOffset <= 0 ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: weekOffset <= 0 ? "#D1D5DB" : "#374151", transition: "all 0.2s" }}>
+            <button onClick={() => setWeekOffset(w => w - 1)} disabled={weekOffset <= 0}
+              style={{ width: 34, height: 34, border: "1.5px solid #E5E7EB", borderRadius: 10, background: weekOffset <= 0 ? "#F9FAFB" : "#fff", cursor: weekOffset <= 0 ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: weekOffset <= 0 ? "#D1D5DB" : "#374151" }}>
               <ChevronLeft size={16} />
             </button>
             <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 700, color: "#1A1A2E" }}>
               {monthNames[weekDays[0].getMonth()]} {weekDays[0].getFullYear()}
             </span>
-            <button onClick={() => setWeekOffset((w) => w + 1)}
-              style={{ width: 34, height: 34, border: "1.5px solid #E5E7EB", borderRadius: 10, background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#374151", transition: "all 0.2s" }}>
+            <button onClick={() => setWeekOffset(w => w + 1)}
+              style={{ width: 34, height: 34, border: "1.5px solid #E5E7EB", borderRadius: 10, background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#374151" }}>
               <ChevronRight size={16} />
             </button>
           </div>
 
-          {/* Day picker */}
+          {/* ── Дни недели ── */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", borderBottom: "1px solid #F3F4F6" }}>
             {weekDays.map((day, i) => {
               const isSelected = formatDate(day) === formatDate(selectedDate);
-              const isPastDay = day < today;
-              const isToday = formatDate(day) === formatDate(today);
+              const isPastDay  = day < today;
+              const isToday    = formatDate(day) === formatDate(today);
               return (
                 <button key={i} onClick={() => !isPastDay && (setSelectedDate(day), setSelectedTime(null))} disabled={isPastDay}
                   style={{ padding: "16px 8px", border: "none", borderRight: i < 6 ? "1px solid #F3F4F6" : "none", background: isSelected ? "#1A1A2E" : "transparent", cursor: isPastDay ? "not-allowed" : "pointer", transition: "background 0.15s" }}>
-                  <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 600, color: isSelected ? "rgba(255,255,255,0.5)" : isPastDay ? "#E5E7EB" : "#9CA3AF", marginBottom: 6, letterSpacing: "0.3px" }}>{dayNames[i]}</div>
+                  <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 600, color: isSelected ? "rgba(255,255,255,0.5)" : isPastDay ? "#E5E7EB" : "#9CA3AF", marginBottom: 6 }}>{dayNames[i]}</div>
                   <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 17, fontWeight: 800, color: isSelected ? "#fff" : isPastDay ? "#D1D5DB" : "#1A1A2E" }}>{day.getDate()}</div>
                   {isToday && !isSelected && <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#3B82F6", margin: "6px auto 0" }} />}
                 </button>
@@ -155,7 +239,7 @@ export default function BookingCalendar({ onAuthRequired }) {
             })}
           </div>
 
-          {/* Slots */}
+          {/* ── Слоты времени ── */}
           <div style={{ padding: 28 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -164,7 +248,7 @@ export default function BookingCalendar({ onAuthRequired }) {
                   {selectedDate.toLocaleDateString("ru-RU", { weekday: "long", day: "numeric", month: "long" })}
                 </span>
               </div>
-              {/* Legend */}
+              {/* Легенда */}
               <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
                 {[
                   { color: "#22C55E", bg: "#F0FDF4", label: "Свободно" },
@@ -181,22 +265,22 @@ export default function BookingCalendar({ onAuthRequired }) {
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(76px, 1fr))", gap: 8 }}>
               {TIME_SLOTS.map((time) => {
-                const booking = getSlotBooking(time, selectedSim);
-                const mine = booking && user && booking.userId === user.uid;
-                const past = isPast(time);
+                const mine    = isMySlot(time);
+                const free    = isSlotFreeForMode(time);
+                const past    = isPast(time);
                 const selected = selectedTime === time;
 
                 let bg, border, color, cursor = "pointer";
-                if (past) { bg = "#F9FAFB"; border = "#F3F4F6"; color = "#D1D5DB"; cursor = "not-allowed"; }
-                else if (mine) { bg = "#EFF6FF"; border = "#93C5FD"; color = "#1D4ED8"; }
-                else if (booking) { bg = "#FEF2F2"; border = "#FECACA"; color = "#DC2626"; cursor = "not-allowed"; }
-                else if (selected) { bg = "#1A1A2E"; border = "#1A1A2E"; color = "#fff"; }
-                else { bg = "#F0FDF4"; border = "#86EFAC"; color = "#15803D"; }
+                if (past)         { bg = "#F9FAFB"; border = "#F3F4F6"; color = "#D1D5DB"; cursor = "not-allowed"; }
+                else if (mine)    { bg = "#EFF6FF"; border = "#93C5FD"; color = "#1D4ED8"; }
+                else if (!free)   { bg = "#FEF2F2"; border = "#FECACA"; color = "#DC2626"; cursor = "not-allowed"; }
+                else if (selected){ bg = "#1A1A2E"; border = "#1A1A2E"; color = "#fff"; }
+                else              { bg = "#F0FDF4"; border = "#86EFAC"; color = "#15803D"; }
 
                 return (
                   <button key={time}
-                    onClick={() => { if (!past && (!booking || mine)) setSelectedTime(selected ? null : time); }}
-                    disabled={past || (booking && !mine)}
+                    onClick={() => { if (!past && (free || mine)) setSelectedTime(selected ? null : time); }}
+                    disabled={past || (!free && !mine)}
                     style={{ padding: "10px 4px", borderRadius: 10, border: `1.5px solid ${border}`, background: bg, color, fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 700, cursor, transition: "all 0.15s", textAlign: "center", lineHeight: 1 }}>
                     {time}
                     {mine && <div style={{ fontSize: 9, marginTop: 3, opacity: 0.75, fontWeight: 500 }}>моя</div>}
@@ -205,28 +289,35 @@ export default function BookingCalendar({ onAuthRequired }) {
               })}
             </div>
 
-            {/* Action panel */}
+            {/* ── Панель подтверждения ── */}
             {selectedTime && (
               <div style={{ marginTop: 24, padding: "20px 24px", background: "#F9FAFB", borderRadius: 16, border: "1px solid #E5E7EB", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
                 <div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: SIM_COLORS[selectedSim] }} />
-                    <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 700, color: "#1A1A2E" }}>{selectedSim} — {selectedTime}</span>
+                    <span style={{ fontSize: 18 }}>{currentMode.emoji}</span>
+                    <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 700, color: "#1A1A2E" }}>
+                      {currentMode.name} — {selectedTime}
+                    </span>
                   </div>
                   <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#9CA3AF" }}>
-                    {selectedDate.toLocaleDateString("ru-RU", { day: "numeric", month: "long" })} · 30 мин · 2 500₸
+                    {selectedDate.toLocaleDateString("ru-RU", { day: "numeric", month: "long" })} · 30 мин · {currentMode.price}
                   </div>
                 </div>
 
-                {isMySelectedBooking ? (
-                  <button onClick={() => handleCancel(selectedBooking.id)} disabled={cancelling === selectedBooking.id}
+                {selectedMyBooking ? (
+                  <button onClick={() => {
+                      // Находим id бронирования для отмены
+                      const b = isMySlot(selectedTime);
+                      if (b && b.id) handleCancel(b.id);
+                    }}
+                    disabled={!!cancelling}
                     style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 24px", background: "#FEF2F2", color: "#DC2626", border: "1.5px solid #FECACA", borderRadius: 12, fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
                     <X size={15} />
                     {cancelling ? "Отменяем..." : "Отменить запись"}
                   </button>
                 ) : (
                   <button onClick={handleBook} disabled={loading}
-                    style={{ padding: "12px 28px", background: "#1A1A2E", color: "#fff", border: "none", borderRadius: 12, fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", transition: "opacity 0.2s" }}>
+                    style={{ padding: "12px 28px", background: "#1A1A2E", color: "#fff", border: "none", borderRadius: 12, fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer" }}>
                     {loading ? "..." : user ? "Записаться" : "Войти и записаться"}
                   </button>
                 )}
@@ -236,7 +327,9 @@ export default function BookingCalendar({ onAuthRequired }) {
             {success && (
               <div style={{ marginTop: 16, padding: "14px 20px", background: "#F0FDF4", border: "1px solid #86EFAC", borderRadius: 12, display: "flex", alignItems: "center", gap: 10 }}>
                 <CheckCircle2 size={18} color="#22C55E" />
-                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#15803D", fontWeight: 600 }}>Запись подтверждена! Ждём вас.</span>
+                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#15803D", fontWeight: 600 }}>
+                  Запись подтверждена! Ждём вас.
+                </span>
               </div>
             )}
           </div>
