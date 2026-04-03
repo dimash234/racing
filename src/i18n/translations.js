@@ -33,7 +33,7 @@ export const translations = {
       feature2_title: "Two Simulators",
       feature2_desc: "City Car Driving for rules, BeamNG.Drive for emergency situations.",
       feature3_title: "Non-Certified Program",
-      feature3_desc: "Not officially recognized for Kazakhstani driver licensing.",
+      feature3_desc: "Recognized for Kazakhstani driver licensing.",
       feature4_title: "Expert Instructors",
       feature4_desc: "Certified driving instructors guide every session with real-time feedback.",
     },
@@ -183,7 +183,7 @@ export const translations = {
     },
     footer: {
       tagline: "Симуляторная автошкола Казахстана.",
-      rights: "Все не права защищены.",
+      rights: "Все права не защищены.",
     },
   },
 
