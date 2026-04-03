@@ -1,0 +1,30 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /contacts/{docId} {
+      allow create: if request.resource.data.name is string
+                    && request.resource.data.name.size() > 0
+                    && request.resource.data.email is string
+                    && request.resource.data.email.size() > 0;
+      allow read, delete: if request.auth != null
+                          && request.auth.token.email == "abd944@mail.ru";
+      allow update: if false;
+    }
+
+    match /bookings/{bookingId} {
+      // Anyone can read bookings (to see free/busy slots)
+      allow read: if true;
+      // Only logged-in users can create a booking for themselves
+      allow create: if request.auth != null
+                    && request.resource.data.userId == request.auth.uid;
+      // Only the owner can delete their booking
+      allow delete: if request.auth != null
+                    && resource.data.userId == request.auth.uid;
+      // Admin can delete any booking
+      allow delete: if request.auth != null
+                    && request.auth.token.email == "abd944@mail.ru";
+      allow update: if false;
+    }
+  }
+}
