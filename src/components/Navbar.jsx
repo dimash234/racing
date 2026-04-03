@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import { useState, useEffect } from "react";
 import { Menu, X, Gauge, User } from "lucide-react";
 import { useLanguage } from "../i18n/LanguageContext";
@@ -7,15 +6,6 @@ import { useAuth } from "../firebase/useAuth";
 export default function Navbar({ onAuthClick }) {
   const { lang, setLang, t } = useLanguage();
   const { user, logout } = useAuth();
-=======
-// src/components/Navbar.jsx
-import { useState, useEffect } from "react";
-import { Menu, X, Gauge } from "lucide-react";
-import { useLanguage } from "../i18n/LanguageContext";
-
-export default function Navbar() {
-  const { lang, setLang, t } = useLanguage();
->>>>>>> eb1a0fc8915520adfdca9b949e0094becb30c7df
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -38,23 +28,7 @@ export default function Navbar() {
   const LANG_LABELS = { ru: "РУС", kz: "ҚАЗ", en: "ENG" };
 
   return (
-<<<<<<< HEAD
     <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, background: scrolled ? "rgba(255,255,255,0.97)" : "transparent", backdropFilter: scrolled ? "blur(12px)" : "none", borderBottom: scrolled ? "1px solid #E5E7EB" : "none", transition: "all 0.3s ease" }}>
-=======
-    <nav
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 100,
-        background: scrolled ? "rgba(255,255,255,0.97)" : "transparent",
-        backdropFilter: scrolled ? "blur(12px)" : "none",
-        borderBottom: scrolled ? "1px solid #E5E7EB" : "none",
-        transition: "all 0.3s ease",
-      }}
-    >
->>>>>>> eb1a0fc8915520adfdca9b949e0094becb30c7df
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 64 }}>
         {/* Logo */}
         <a href="#hero" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
@@ -70,60 +44,25 @@ export default function Navbar() {
         {/* Desktop Links */}
         <div style={{ display: "flex", alignItems: "center", gap: 32 }} className="desktop-nav">
           {links.map((link) => (
-<<<<<<< HEAD
             <a key={link.key} href={link.href}
               style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#374151", textDecoration: "none", fontWeight: 500, transition: "color 0.2s" }}
               onMouseEnter={(e) => (e.target.style.color = "#1A1A2E")}
               onMouseLeave={(e) => (e.target.style.color = "#374151")}>
-=======
-            <a
-              key={link.key}
-              href={link.href}
-              style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#374151", textDecoration: "none", fontWeight: 500, transition: "color 0.2s" }}
-              onMouseEnter={(e) => (e.target.style.color = "#1A1A2E")}
-              onMouseLeave={(e) => (e.target.style.color = "#374151")}
-            >
->>>>>>> eb1a0fc8915520adfdca9b949e0094becb30c7df
               {t.nav[link.key]}
             </a>
           ))}
         </div>
 
-<<<<<<< HEAD
         {/* Right side */}
         <div style={{ display: "flex", alignItems: "center", gap: 8 }} className="desktop-nav">
           <div style={{ display: "flex", background: "#F3F4F6", borderRadius: 8, padding: 3, gap: 2 }}>
             {LANGS.map((l) => (
               <button key={l} onClick={() => setLang(l)}
                 style={{ padding: "4px 10px", borderRadius: 6, border: "none", cursor: "pointer", fontSize: 11, fontWeight: 600, fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.5px", background: lang === l ? "#1A1A2E" : "transparent", color: lang === l ? "#fff" : "#6B7280", transition: "all 0.2s" }}>
-=======
-        {/* Language + CTA */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }} className="desktop-nav">
-          <div style={{ display: "flex", background: "#F3F4F6", borderRadius: 8, padding: 3, gap: 2 }}>
-            {LANGS.map((l) => (
-              <button
-                key={l}
-                onClick={() => setLang(l)}
-                style={{
-                  padding: "4px 10px",
-                  borderRadius: 6,
-                  border: "none",
-                  cursor: "pointer",
-                  fontSize: 11,
-                  fontWeight: 600,
-                  fontFamily: "'DM Sans', sans-serif",
-                  letterSpacing: "0.5px",
-                  background: lang === l ? "#1A1A2E" : "transparent",
-                  color: lang === l ? "#fff" : "#6B7280",
-                  transition: "all 0.2s",
-                }}
-              >
->>>>>>> eb1a0fc8915520adfdca9b949e0094becb30c7df
                 {LANG_LABELS[l]}
               </button>
             ))}
           </div>
-<<<<<<< HEAD
 
           {user ? (
             <a href="/dashboard"
@@ -142,85 +81,26 @@ export default function Navbar() {
         {/* Mobile */}
         <button className="mobile-menu-btn" onClick={() => setOpen(!open)}
           style={{ display: "none", background: "none", border: "none", cursor: "pointer", padding: 4 }}>
-=======
-          <a
-            href="#contact"
-            style={{
-              padding: "8px 20px",
-              background: "#1A1A2E",
-              color: "#fff",
-              borderRadius: 8,
-              fontFamily: "'DM Sans', sans-serif",
-              fontSize: 13,
-              fontWeight: 600,
-              textDecoration: "none",
-              transition: "background 0.2s",
-            }}
-            onMouseEnter={(e) => (e.target.style.background = "#2D2D4E")}
-            onMouseLeave={(e) => (e.target.style.background = "#1A1A2E")}
-          >
-            {t.nav.contact}
-          </a>
-        </div>
-
-        {/* Mobile menu button */}
-        <button
-          className="mobile-menu-btn"
-          onClick={() => setOpen(!open)}
-          style={{ display: "none", background: "none", border: "none", cursor: "pointer", padding: 4 }}
-        >
->>>>>>> eb1a0fc8915520adfdca9b949e0094becb30c7df
           {open ? <X size={24} /> : <Menu size={24} />}
         </button>
       </div>
 
-<<<<<<< HEAD
       {open && (
         <div style={{ background: "#fff", borderTop: "1px solid #E5E7EB", padding: "16px 24px 24px" }}>
           {links.map((link) => (
             <a key={link.key} href={link.href} onClick={() => setOpen(false)}
               style={{ display: "block", padding: "10px 0", fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: "#374151", textDecoration: "none", borderBottom: "1px solid #F3F4F6" }}>
-=======
-      {/* Mobile Dropdown */}
-      {open && (
-        <div style={{ background: "#fff", borderTop: "1px solid #E5E7EB", padding: "16px 24px 24px" }}>
-          {links.map((link) => (
-            <a
-              key={link.key}
-              href={link.href}
-              onClick={() => setOpen(false)}
-              style={{ display: "block", padding: "10px 0", fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: "#374151", textDecoration: "none", borderBottom: "1px solid #F3F4F6" }}
-            >
->>>>>>> eb1a0fc8915520adfdca9b949e0094becb30c7df
               {t.nav[link.key]}
             </a>
           ))}
           <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
             {LANGS.map((l) => (
-<<<<<<< HEAD
               <button key={l} onClick={() => { setLang(l); setOpen(false); }}
                 style={{ padding: "6px 14px", borderRadius: 6, border: "1px solid #E5E7EB", cursor: "pointer", fontSize: 12, fontWeight: 600, background: lang === l ? "#1A1A2E" : "#fff", color: lang === l ? "#fff" : "#374151" }}>
-=======
-              <button
-                key={l}
-                onClick={() => { setLang(l); setOpen(false); }}
-                style={{
-                  padding: "6px 14px",
-                  borderRadius: 6,
-                  border: "1px solid #E5E7EB",
-                  cursor: "pointer",
-                  fontSize: 12,
-                  fontWeight: 600,
-                  background: lang === l ? "#1A1A2E" : "#fff",
-                  color: lang === l ? "#fff" : "#374151",
-                }}
-              >
->>>>>>> eb1a0fc8915520adfdca9b949e0094becb30c7df
                 {LANG_LABELS[l]}
               </button>
             ))}
           </div>
-<<<<<<< HEAD
           {user ? (
             <a href="/dashboard" style={{ display: "block", marginTop: 12, padding: "10px 0", fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 600, color: "#1A1A2E", textDecoration: "none" }}>
               👤 Личный кабинет
@@ -231,8 +111,6 @@ export default function Navbar() {
               Войти / Регистрация
             </button>
           )}
-=======
->>>>>>> eb1a0fc8915520adfdca9b949e0094becb30c7df
         </div>
       )}
 
@@ -244,8 +122,4 @@ export default function Navbar() {
       `}</style>
     </nav>
   );
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> eb1a0fc8915520adfdca9b949e0094becb30c7df
