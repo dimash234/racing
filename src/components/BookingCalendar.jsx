@@ -20,7 +20,7 @@ const SIMULATORS = [
 const PACKAGE = { name: "Оба симулятора", color: "#8B5CF6", emoji: "🎮", price: "4 500₸" };
 
 function formatDate(date) {
-  return date.toISOString().split("T")[0];
+  return date.toLocaleDateString("en-CA");
 }
 function addDays(date, n) {
   const d = new Date(date);
