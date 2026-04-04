@@ -2,54 +2,37 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Вспомогательная функция — получить роль текущего пользователя
     function getUserRole() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
     }
-
-    // Проверка: менеджер или выше
     function isManager() {
       return request.auth != null && getUserRole() in ['manager', 'admin'];
     }
-
-    // Проверка: только admin
     function isAdmin() {
       return request.auth != null && getUserRole() == 'admin';
     }
 
-    // --- Коллекция users ---
     match /users/{uid} {
-      // Пользователь читает/пишет только свой документ
-      allow read: if request.auth != null && request.auth.uid == uid;
+      allow read: if request.auth != null && (request.auth.uid == uid || isManager());
       allow create: if request.auth != null && request.auth.uid == uid;
-      // Менеджер может читать всех пользователей
-      allow read: if isManager();
-      // Менять роль может только admin
       allow update: if request.auth != null && request.auth.uid == uid
                     && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']);
       allow update: if isAdmin();
     }
 
-    // --- Заявки (contacts) ---
     match /contacts/{docId} {
-      // Создать заявку может любой (форма обратной связи)
       allow create: if request.resource.data.name is string
                     && request.resource.data.name.size() > 0
                     && request.resource.data.email is string
                     && request.resource.data.email.size() > 0;
-      // Читать и удалять — только менеджер и выше
       allow read, delete: if isManager();
       allow update: if false;
     }
 
-    // --- Бронирования (bookings) ---
     match /bookings/{bookingId} {
-      // Слоты видны всем (свободные/занятые)
       allow read: if true;
-      // Создать может только авторизованный пользователь для себя
       allow create: if request.auth != null
                     && request.resource.data.userId == request.auth.uid;
-      // Удалить может владелец или менеджер
       allow delete: if request.auth != null
                     && (resource.data.userId == request.auth.uid || isManager());
       allow update: if false;
