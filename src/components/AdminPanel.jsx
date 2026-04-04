@@ -28,7 +28,9 @@ function fmt(ts) {
 
 function fmtDate(str) {
   if (!str) return "—";
-  return new Date(str + "T00:00:00").toLocaleDateString("ru-RU", { weekday: "short", day: "numeric", month: "long" });
+  return new Date(str + "T12:00:00").toLocaleDateString("ru-RU", {
+    weekday: "short", day: "numeric", month: "long",
+  });
 }
 
 function fmtTime(t) {

@@ -10,7 +10,7 @@ const SIM_META = {
 };
 
 function formatDate(dateStr) {
-  return new Date(dateStr + "T00:00:00").toLocaleDateString("ru-RU", {
+  return new Date(dateStr + "T12:00:00").toLocaleDateString("ru-RU", {
     weekday: "long", day: "numeric", month: "long",
   });
 }
